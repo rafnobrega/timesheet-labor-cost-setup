@@ -6,23 +6,20 @@ Repeatable setup kit for configuring **Salesforce Field Service Timesheets & Lab
 
 | Component | Description |
 |---|---|
-| `scripts/setup-timesheets.sh` | Automated script — configures Pay Types, Cost Rules, Permission Sets, Expression Set deployment |
-| `scripts/TIMESHEET-SETUP-GUIDE.md` | Complete step-by-step guide (manual + automated steps, troubleshooting) |
-| `force-app/.../SDO_Timesheet_Data_Rules` | Expression set defining pay type time windows (Regular, OT, Double Time) |
-| `force-app/.../RN_Process_Timesheet` | Record-triggered flow for timesheet submission processing |
-| `force-app/.../RN_Process_Approved_Timesheet` | Record-triggered flow for approved timesheet processing |
+| `scripts/setup-timesheets.sh` | Automated script — deploys flows, configures Pay Types, Cost Rules, OWD sharing, Permission Sets, Expression Set |
+| `scripts/TIMESHEET-SETUP-GUIDE.md` | Complete reference guide (manual steps, troubleshooting) |
+| `force-app/.../flows/` | **RN_Process_Timesheet** + **RN_Process_Approved_Timesheet** — deployed and activated by the script |
+| `force-app/.../expressionSetDefinition/` | **SDO_Timesheet_Data_Rules** — pay type time windows (Regular, OT, Double Time) |
 
 ## Quick Start
 
-### 1. Complete manual steps first
+### 1. Complete manual steps first (3 steps)
 
-See [`scripts/TIMESHEET-SETUP-GUIDE.md`](scripts/TIMESHEET-SETUP-GUIDE.md) — Part A (Steps A1–A5).
+These cannot be automated via CLI:
 
-**Critical manual steps:**
-- Enable Timesheets & Labor Cost Optimization in Field Service Settings
-- Create **"Timesheet Entry Item Computation Rule"** expression set from template
-- Create **ProcessTimesheet** and **ProcessApprovedTmsht** flows from templates
-- Update Sharing Settings (OWD)
+1. **Enable Timesheets** — Setup > Field Service Settings > Timesheets section > Enable "Timesheets and Labor Cost Optimization". Set rounding thresholds to 15 min.
+2. **Create Expression Sets from Templates** — App Launcher > Expression Set Templates. Create from **"Timesheet Entry Item Computation Rule"** template (set Rank = 1, Save and Activate). Optionally also create "Timesheet Meals And Gifts Computation Rule".
+3. **Set TimeSheetEntryItem Status default** — Object Manager > Time Sheet Entry Item > Fields > Status > Edit "New" value > Check "Make this value the default" > Save.
 
 ### 2. Run the automated script
 
@@ -34,6 +31,15 @@ sf org login web --set-default --alias MY_ORG
 cd scripts
 ./setup-timesheets.sh MY_ORG
 ```
+
+The script handles everything else:
+- Deploys **ProcessTimesheet** and **ProcessApprovedTmsht** flows (active)
+- Creates/updates **Pay Types** (Regular Time, Over Time, Double Time, Vacation Time)
+- Configures **Service Resource Cost Rules** (Compute Time Breakdown, Compute Meals & Gifts)
+- Sets **OWD sharing** (TimeSheet, CostCenter, GeolocationBasedAction, JobExpenseType → ReadWrite; SupplementalCompensation → Read)
+- Assigns **Permission Sets** (prompts for usernames)
+- Deploys **SDO Timesheet Data Rules** expression set
+- Runs **verification** queries
 
 ### 3. Verify on mobile
 

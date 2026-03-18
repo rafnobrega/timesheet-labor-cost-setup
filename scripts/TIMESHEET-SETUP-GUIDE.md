@@ -1,7 +1,6 @@
 # Timesheet & Labor Cost Optimization — Setup Guide
 
 Complete setup for Salesforce Field Service Timesheets & Labor Cost Optimization.
-Estimated time: ~15 minutes (manual steps) + ~2 minutes (script).
 
 ---
 
@@ -17,14 +16,14 @@ Estimated time: ~15 minutes (manual steps) + ~2 minutes (script).
 ## Order of Operations
 
 ```
-1. Manual Steps (UI)        ← Do these FIRST
-2. Run setup script (CLI)   ← Automates data/config
+1. Manual Steps (UI)        ← 3 steps, do these FIRST
+2. Run setup script (CLI)   ← Automates everything else
 3. Verification (Mobile)    ← Test on Field Service Mobile
 ```
 
 ---
 
-## PART A: Manual Steps (Setup UI)
+## PART A: Manual Steps (3 steps — UI only)
 
 ### A1. Enable Timesheets & Labor Cost Optimization
 
@@ -35,27 +34,7 @@ Estimated time: ~15 minutes (manual steps) + ~2 minutes (script).
 5. Set **End Time Rounding Threshold** = 15 min
 6. Save
 
-### A2. Create Flows from Templates
-
-Go to **Setup > Flows** and create a new flow from each template below.
-For each: click the template > Save As > enter a name > Save > **Activate**.
-
-| Template Name | Your Flow Name (suggestion) | Type | Required? |
-|---|---|---|---|
-| ProcessTimesheet | Process_Timesheet | Record-Triggered | **YES** |
-| ProcessApprovedTmsht | Process_Approved_Timesheet | Record-Triggered | **YES** |
-| ApproveTimeSheets | Approve_Time_Sheets | Screen | For demo |
-| ApproveTimeSheetEntries | Approve_Time_Sheet_Entries | Screen | For demo |
-| ApproveTimeSheetEntryItem | Approve_Time_Sheet_Entry_Items | Screen | For demo |
-| RejectTimeSheets | Reject_Time_Sheets | Screen | For demo |
-| RejectTimeSheetEntries | Reject_Time_Sheet_Entries | Screen | For demo |
-| RejectTimeSheetEntryItems | Reject_Time_Sheet_Entry_Items | Screen | For demo |
-| CreateAbsnTimeSheetEntry | Create_Absence_TSE | Record-Triggered | Optional |
-| RemoveAbsnTimeSheetEntry | Remove_Absence_TSE | Record-Triggered | Optional |
-
-**Minimum required:** ProcessTimesheet + ProcessApprovedTmsht
-
-### A3. Create Expression Sets from Templates
+### A2. Create Expression Sets from Templates
 
 Go to **App Launcher > Expression Set Templates**.
 
@@ -67,48 +46,34 @@ Go to **App Launcher > Expression Set Templates**.
 
 For each: Click the template > Set Rank = 1 > **Save and Activate**.
 
-### A4. Sharing Settings (OWD)
+### A3. Set TimeSheetEntryItem Status Default
 
-Go to **Setup > Sharing Settings** and set:
+Object Manager > **Time Sheet Entry Item** > Fields & Relationships > **Status** > Edit "New" value > Check **"Make this value the default for the master picklist"** > Save.
 
-| Object | Internal Access |
-|---|---|
-| Time Sheet | Public Read/Write |
-| Cost Center | Public Read/Write |
-| Geolocation Based Action | Public Read/Write |
-| Job Expense Type | Public Read/Write |
-| Supplemental Compensation | Public Read Only |
-
-### A5. Default Picklist Values
-
-Go to **Setup > Object Manager** and set "New" as the default status for:
-
-| Object | Field | Default Value |
-|---|---|---|
-| Time Sheet | Status | New |
-| Time Sheet Entry | Status | New |
-| Time Sheet Entry Item | Status | New |
-
-For each: Object Manager > [Object] > Fields & Relationships > Status > Edit "New" value > Check "Make this value the default for the master picklist" > Save
+> **Note:** TimeSheet and TimeSheetEntry already default to "New" in most orgs. This step is only needed for TimeSheetEntryItem.
 
 ---
 
 ## PART B: Run the Automated Script
 
-After completing all manual steps above:
+After completing the 3 manual steps above:
 
 ```bash
-cd D25/scripts
+cd scripts
 ./setup-timesheets.sh <org-alias>
 ```
 
-The script will:
-- Update Pay Type WageType values (RegularTime, TimeAndAHalf, DoubleTime)
-- Create/update Service Resource Cost Rules (Compute Time Breakdown, Compute Meals & Gifts)
-- Assign permission sets (prompts for usernames)
-- Deploy SDO_Timesheet_Data_Rules expression set
-- Set expression set UsageType to Timesheet
-- Print verification summary
+### What the script automates:
+
+| Step | What It Does |
+|---|---|
+| **1. Flows** | Deploys RN_Process_Timesheet + RN_Process_Approved_Timesheet (Active) |
+| **2. Pay Types** | Creates/updates Regular Time, Over Time, Double Time, Vacation Time with correct WageType values |
+| **3. Cost Rules** | Creates/updates Compute Time Breakdown + Compute Meals & Gifts with correct Type, Rule, and StandardApexClass |
+| **4. OWD Sharing** | Sets TimeSheet, CostCenter, GeolocationBasedAction, JobExpenseType to ReadWrite; SupplementalCompensation to Read |
+| **5. Permission Sets** | Prompts for usernames, assigns LaborCostOptimAdmin/Supervisor/Resource |
+| **6. Expression Set** | Deploys SDO_Timesheet_Data_Rules and sets UsageType to Timesheet |
+| **7. Verification** | Queries Pay Types, Cost Rules, and OWD settings to confirm |
 
 ---
 
@@ -164,7 +129,7 @@ For bulk approve/reject:
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| 0h 0m for all totals | Missing "Timesheet Entry Item Computation Rule" expression set | Create from template (Step A3) |
+| 0h 0m for all totals | Missing "Timesheet Entry Item Computation Rule" expression set | Create from template (Step A2) |
 | Stuck at "Validation In Progress" | Missing StandardApexClass on cost rule | Run setup script (sets ifstmsht.TimeSheetEntryItemRuleDataHandler) |
 | "Start/end time doesn't match" error | TimeSheet boundaries don't align with entries | Ensure first entry start = TS start, last entry end = TS end |
 | All hours show as Regular Time | Operating Hours define full day as regular | Adjust Operating Hours timeslots for OT windows |
