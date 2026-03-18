@@ -45,9 +45,10 @@ The script handles everything else:
 The Timesheets component must be added to the mobile layout manually (this is not deployable metadata):
 
 1. Setup > **Field Service Mobile App Builder**
-2. Select your mobile app configuration
-3. Add the **Timesheets** component to the navigation menu
-4. Save and publish
+2. Create a new configuration or edit an existing one
+3. Add the **LWC Attributes** component
+4. Select the **timeSheetLandingPage** LWC
+5. Save and publish
 
 ### 4. Verify on mobile
 
