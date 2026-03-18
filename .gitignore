@@ -1,0 +1,9 @@
+# Salesforce
+.sfdx/
+.sf/
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/

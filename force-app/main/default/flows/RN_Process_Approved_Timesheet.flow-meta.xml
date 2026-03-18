@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionCalls>
+        <description>Calls an action that sends an  email to the field service technician of the approved timesheet that triggered the flow using the EmailSubjectTextTemplate and EmailBodyTextTemplate.</description>
+        <name>SendEmailToTechnician</name>
+        <label>Send Email to Technician</label>
+        <locationX>50</locationX>
+        <locationY>431</locationY>
+        <actionName>emailSimple</actionName>
+        <actionType>emailSimple</actionType>
+        <connector>
+            <targetReference>ComputeTimeSheetMealsandGifts</targetReference>
+        </connector>
+        <flowTransactionModel>CurrentTransaction</flowTransactionModel>
+        <inputParameters>
+            <name>emailAddresses</name>
+            <value>
+                <elementReference>technicianEmail</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>emailSubject</name>
+            <value>
+                <elementReference>EmailSubjectTextTemplate</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>emailBody</name>
+            <value>
+                <elementReference>EmailBodyTextTemplate</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>sendRichBody</name>
+            <value>
+                <booleanValue>true</booleanValue>
+            </value>
+        </inputParameters>
+        <nameSegment>emailSimple</nameSegment>
+        <offset>0</offset>
+    </actionCalls>
+    <apiVersion>63.0</apiVersion>
+    <decisions>
+        <description>Determines whether the time sheet that triggered the flow was approved.</description>
+        <name>IsTimeSheetApproved</name>
+        <label>Is Time Sheet Approved?</label>
+        <locationX>182</locationX>
+        <locationY>323</locationY>
+        <defaultConnector>
+            <targetReference>UpdateTimeSheet</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>No</defaultConnectorLabel>
+        <rules>
+            <name>ApprovedTimeSheet</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>$Record.Status</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <stringValue>Approved</stringValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>SendEmailToTechnician</targetReference>
+            </connector>
+            <label>Yes</label>
+        </rules>
+    </decisions>
+    <environments>Default</environments>
+    <formulas>
+        <description>Returns an empty value if the status of the timesheet record that triggered the flow is Approved, otherwise, it returns the status comment.</description>
+        <name>UpdateStatusComment</name>
+        <dataType>String</dataType>
+        <expression>IF(TEXT({!$Record.Status})=&apos;Approved&apos;, &apos;&apos;, {!$Record.StatusComment})</expression>
+    </formulas>
+    <interviewLabel>RN_Process Approved Timesheet {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>RN_Process Approved Timesheet</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <recordLookups>
+        <description>Get time sheet entry records where the time sheet ID matches the ID of the record that triggered the flow. Stores the results in Time Sheet Entries from Get Time Sheet Entries record collection.</description>
+        <name>GetTimeSheetEntries</name>
+        <label>Get Time Sheet Entries</label>
+        <locationX>182</locationX>
+        <locationY>947</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>TimeSheetEntryIds</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>TimeSheetId</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>$Record.Id</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>false</getFirstRecordOnly>
+        <object>TimeSheetEntry</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordUpdates>
+        <description>Sets the status comment of the timesheet record that triggered this flow to an empty value if the timesheet is approved.</description>
+        <name>UpdateTimeSheet</name>
+        <label>Update Time Sheet</label>
+        <locationX>182</locationX>
+        <locationY>731</locationY>
+        <connector>
+            <targetReference>UpdateTimeSheetEntries</targetReference>
+        </connector>
+        <inputAssignments>
+            <field>StatusComment</field>
+            <value>
+                <elementReference>UpdateStatusComment</elementReference>
+            </value>
+        </inputAssignments>
+        <inputReference>$Record</inputReference>
+    </recordUpdates>
+    <recordUpdates>
+        <description>Updates time sheet entry records with the time sheet ID of the record that triggered the flow, setting the Status to the time sheet status and the status comment to an empty value if the time sheet is approved, or to the status comment of the time sheet otherwise.</description>
+        <name>UpdateTimeSheetEntries</name>
+        <label>Update Time Sheet Entries</label>
+        <locationX>182</locationX>
+        <locationY>839</locationY>
+        <connector>
+            <targetReference>GetTimeSheetEntries</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>TimeSheetId</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>$Record.Id</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>Status</field>
+            <value>
+                <elementReference>$Record.Status</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>StatusComment</field>
+            <value>
+                <elementReference>UpdateStatusComment</elementReference>
+            </value>
+        </inputAssignments>
+        <object>TimeSheetEntry</object>
+    </recordUpdates>
+    <recordUpdates>
+        <description>Updates the time sheet entry item records with TimeSheetEntryItemIds that match those in the IDs collection, setting the Status to the time sheet status and the status comment to an empty value if the time sheet is approved, or to the time sheet&apos;s status comment otherwise.</description>
+        <name>UpdateTimeSheetEntryItems</name>
+        <label>Update Time Sheet Entry Items</label>
+        <locationX>182</locationX>
+        <locationY>1163</locationY>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>TimeSheetEntryId</field>
+            <operator>In</operator>
+            <value>
+                <elementReference>TimeSheetEntryIds</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>Status</field>
+            <value>
+                <elementReference>$Record.Status</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>StatusComment</field>
+            <value>
+                <elementReference>UpdateStatusComment</elementReference>
+            </value>
+        </inputAssignments>
+        <object>TimeSheetEntryItem</object>
+    </recordUpdates>
+    <sourceTemplate>ifstmsht__ProcessApprovedTmsht</sourceTemplate>
+    <start>
+        <locationX>56</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>IsTimeSheetApproved</targetReference>
+        </connector>
+        <filterFormula> AND(ISCHANGED({!$Record.Status}), OR(TEXT({!$Record.Status})=&apos;Approved&apos;,TEXT({!$Record.Status})=&apos;Rejected&apos;))</filterFormula>
+        <object>TimeSheet</object>
+        <recordTriggerType>Update</recordTriggerType>
+        <triggerType>RecordAfterSave</triggerType>
+    </start>
+    <status>Active</status>
+    <subflows>
+        <description>Calls a flow that computes the meal coupons and gifts earned by the technician for the approved timesheet.</description>
+        <name>ComputeTimeSheetMealsandGifts</name>
+        <label>Compute TimeSheet Meals and Gifts</label>
+        <locationX>50</locationX>
+        <locationY>539</locationY>
+        <connector>
+            <targetReference>UpdateTimeSheet</targetReference>
+        </connector>
+        <flowName>ifstmsht__ComputeTmshtMealsAndGifts</flowName>
+        <inputAssignments>
+            <name>timesheetId</name>
+            <value>
+                <elementReference>$Record.Id</elementReference>
+            </value>
+        </inputAssignments>
+    </subflows>
+    <textTemplates>
+        <description>Stores the body of the email notifying the technician that the supervisor has approved their timesheet.</description>
+        <name>EmailBodyTextTemplate</name>
+        <isViewedAsPlainText>false</isViewedAsPlainText>
+        <text>&lt;p&gt;Hello {!$Record.ServiceResource.Name},&lt;/p&gt;&lt;p&gt;Your TimeSheet for date {!$Record.StartDate} has been approved by your Supervisor. You can check details in Salesforce Field Service mobile app.&lt;/p&gt;</text>
+    </textTemplates>
+    <textTemplates>
+        <description>Stores the subject of the email notifying the technician that the supervisor has approved their timesheet.</description>
+        <name>EmailSubjectTextTemplate</name>
+        <isViewedAsPlainText>true</isViewedAsPlainText>
+        <text>TimeSheet for {!$Record.StartDate} has been Approved</text>
+    </textTemplates>
+    <transforms>
+        <description>Retrieves Time Sheet Entry Ids from the list of Time Sheet Entry records.</description>
+        <name>TimeSheetEntryIds</name>
+        <label>Time Sheet Entry Ids</label>
+        <locationX>182</locationX>
+        <locationY>1055</locationY>
+        <connector>
+            <targetReference>UpdateTimeSheetEntryItems</targetReference>
+        </connector>
+        <dataType>String</dataType>
+        <isCollection>true</isCollection>
+        <scale>0</scale>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+        <transformValues>
+            <transformValueActions>
+                <transformType>Map</transformType>
+                <value>
+                    <elementReference>GetTimeSheetEntries[$EachItem].Id</elementReference>
+                </value>
+            </transformValueActions>
+        </transformValues>
+    </transforms>
+    <variables>
+        <description>Stores the technician&apos;s email address.</description>
+        <name>technicianEmail</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <value>
+            <elementReference>$Record.ServiceResource.RelatedRecord.Email</elementReference>
+        </value>
+    </variables>
+</Flow>

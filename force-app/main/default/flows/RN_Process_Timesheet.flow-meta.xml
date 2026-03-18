@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionCalls>
+        <description>Calls an action that gets timesheet settings.</description>
+        <name>GetTimeSheetSettings</name>
+        <label>Get Time Sheet Settings</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <actionName>getTimesheetSettings</actionName>
+        <actionType>getTimesheetSettings</actionType>
+        <connector>
+            <targetReference>IsTimeSheetSubmitted</targetReference>
+        </connector>
+        <flowTransactionModel>CurrentTransaction</flowTransactionModel>
+        <inputParameters>
+            <name>settingsName</name>
+            <value>
+                <elementReference>twoStepSubmitSetting</elementReference>
+            </value>
+        </inputParameters>
+        <nameSegment>getTimesheetSettings</nameSegment>
+        <offset>0</offset>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </actionCalls>
+    <actionCalls>
+        <description>Calls an action that updates and validates a time sheet record.</description>
+        <name>ProcessTimeSheet</name>
+        <label>Process Time Sheet</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <actionName>validateTimesheet</actionName>
+        <actionType>validateTimesheet</actionType>
+        <faultConnector>
+            <targetReference>UpdateTimeSheet</targetReference>
+        </faultConnector>
+        <flowTransactionModel>CurrentTransaction</flowTransactionModel>
+        <inputParameters>
+            <name>TimeSheetId</name>
+            <value>
+                <elementReference>$Record.Id</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>ComputeTimeSheetEntryItem</name>
+            <value>
+                <elementReference>ComputeTimesheetEntryItem</elementReference>
+            </value>
+        </inputParameters>
+        <nameSegment>validateTimesheet</nameSegment>
+        <offset>0</offset>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </actionCalls>
+    <apiVersion>66.0</apiVersion>
+    <assignments>
+        <description>Sets the ComputeTimesheetEntryItem variable to false.</description>
+        <name>SetComputeTimesheetEntryItem</name>
+        <label>Set Compute Timesheet Entry Item</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignmentItems>
+            <assignToReference>ComputeTimesheetEntryItem</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <booleanValue>false</booleanValue>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>UpdateTimeSheetEntries</targetReference>
+        </connector>
+    </assignments>
+    <assignments>
+        <description>Sets the status for the time sheet entry to Submitted.</description>
+        <name>SetTSESubmittedStatus</name>
+        <label>Set Time Sheet Entry Status</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignmentItems>
+            <assignToReference>timeSheetEntrySuccessStatus</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>submittedStatus</elementReference>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>timeSheetFaultStatus</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>errorStatus</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>HasTwoStepSubmitProcess</targetReference>
+        </connector>
+    </assignments>
+    <assignments>
+        <description>Sets the status for the time sheet entry to Verification Pending.</description>
+        <name>SetTSEVerificationPendingStatus</name>
+        <label>Set Time Sheet Entry Status to Verification Pending</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <assignmentItems>
+            <assignToReference>timeSheetEntrySuccessStatus</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>verificationPendingStatus</elementReference>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>timeSheetFaultStatus</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>validationFailedStatus</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>UpdateTimeSheetEntries</targetReference>
+        </connector>
+    </assignments>
+    <constants>
+        <description>Stores the Error status.</description>
+        <name>errorStatus</name>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>Error</stringValue>
+        </value>
+    </constants>
+    <constants>
+        <description>Stores the Submitted status.</description>
+        <name>submittedStatus</name>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>Submitted</stringValue>
+        </value>
+    </constants>
+    <constants>
+        <description>Stores the timesheet setting value that indicates whether a two-step submission is required.</description>
+        <name>twoStepSubmitSetting</name>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>T_S_L_C_SET_TWO_STEP_SUBMIT</stringValue>
+        </value>
+    </constants>
+    <constants>
+        <description>Stores the Validation Failed status.</description>
+        <name>validationFailedStatus</name>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>Validation Failed</stringValue>
+        </value>
+    </constants>
+    <constants>
+        <description>Stores the Verification Pending status.</description>
+        <name>verificationPendingStatus</name>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>Verification Pending</stringValue>
+        </value>
+    </constants>
+    <decisions>
+        <description>Determines whether the two-step submission process setting is enabled.</description>
+        <name>HasTwoStepSubmitProcess</name>
+        <label>Has Two-Step Submit Process?</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnector>
+            <targetReference>UpdateTimeSheetEntries</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>No</defaultConnectorLabel>
+        <rules>
+            <name>EnabledTwoStepSubmit</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>GetTimeSheetSettings.settingsValue</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>SetComputeTimesheetEntryItem</targetReference>
+            </connector>
+            <label>Yes</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <description>Determines whether the time sheet was submitted.</description>
+        <name>IsTimeSheetSubmitted</name>
+        <label>Is Time Sheet Submitted?</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnector>
+            <targetReference>SetTSEVerificationPendingStatus</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>No</defaultConnectorLabel>
+        <rules>
+            <name>IsSubmitted</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>$Record.Status</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <stringValue>Submitted</stringValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>SetTSESubmittedStatus</targetReference>
+            </connector>
+            <label>Yes</label>
+        </rules>
+    </decisions>
+    <environments>Default</environments>
+    <interviewLabel>RN_Process Timesheet {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>RN_Process Timesheet</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <recordUpdates>
+        <description>Sets the Status field to Error for the triggering time sheet record.</description>
+        <name>UpdateTimeSheet</name>
+        <label>Update Time Sheet</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <inputAssignments>
+            <field>Status</field>
+            <value>
+                <elementReference>timeSheetFaultStatus</elementReference>
+            </value>
+        </inputAssignments>
+        <inputReference>$Record</inputReference>
+    </recordUpdates>
+    <recordUpdates>
+        <description>Sets the Status field to the value in timeSheetEntrySuccessStatus for all time sheet entry records related to the triggering time sheet record.</description>
+        <name>UpdateTimeSheetEntries</name>
+        <label>Update Time Sheet Entries</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>ProcessTimeSheet</targetReference>
+        </connector>
+        <inputAssignments>
+            <field>Status</field>
+            <value>
+                <elementReference>timeSheetEntrySuccessStatus</elementReference>
+            </value>
+        </inputAssignments>
+        <inputReference>$Record.TimeSheetEntries</inputReference>
+    </recordUpdates>
+    <sourceTemplate>ifstmsht__ProcessTimesheet</sourceTemplate>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>GetTimeSheetSettings</targetReference>
+        </connector>
+        <filterLogic>or</filterLogic>
+        <filters>
+            <field>Status</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Submitted</stringValue>
+            </value>
+        </filters>
+        <filters>
+            <field>Status</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Verification Pending</stringValue>
+            </value>
+        </filters>
+        <object>TimeSheet</object>
+        <recordTriggerType>CreateAndUpdate</recordTriggerType>
+        <triggerType>RecordAfterSave</triggerType>
+    </start>
+    <status>Active</status>
+    <variables>
+        <description>Stores a boolean value that indicates whether the time sheet entry item is computed.</description>
+        <name>ComputeTimesheetEntryItem</name>
+        <dataType>Boolean</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <value>
+            <booleanValue>true</booleanValue>
+        </value>
+    </variables>
+    <variables>
+        <description>Stores the status of a time sheet entry if the flow runs successfully.</description>
+        <name>timeSheetEntrySuccessStatus</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <description>Stores the status of a time sheet if the flow fails.</description>
+        <name>timeSheetFaultStatus</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+</Flow>
