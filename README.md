@@ -6,20 +6,19 @@ Repeatable setup kit for configuring **Salesforce Field Service Timesheets & Lab
 
 | Component | Description |
 |---|---|
-| `scripts/setup-timesheets.sh` | Automated script — deploys flows, configures Pay Types, Cost Rules, OWD sharing, Permission Sets, Expression Set |
+| `scripts/setup-timesheets.sh` | Automated script — deploys flows, expression sets, configures Pay Types, Cost Rules, OWD sharing, Permission Sets |
 | `scripts/TIMESHEET-SETUP-GUIDE.md` | Complete reference guide (manual steps, troubleshooting) |
 | `force-app/.../flows/` | **RN_Process_Timesheet** + **RN_Process_Approved_Timesheet** — deployed and activated by the script |
-| `force-app/.../expressionSetDefinition/` | **SDO_Timesheet_Data_Rules** — pay type time windows (Regular, OT, Double Time) |
+| `force-app/.../expressionSetDefinition/` | **TimesheetEntryItemComputationRule** (critical computation rule) + **SDO_Timesheet_Data_Rules** (pay type time windows) |
 
 ## Quick Start
 
-### 1. Complete manual steps first (3 steps)
+### 1. Complete manual steps first (2 steps)
 
 These cannot be automated via CLI:
 
 1. **Enable Timesheets** — Setup > Field Service Settings > Timesheets section > Enable "Timesheets and Labor Cost Optimization". Set rounding thresholds to 15 min.
-2. **Create Expression Sets from Templates** — App Launcher > Expression Set Templates. Create from **"Timesheet Entry Item Computation Rule"** template (set Rank = 1, Save and Activate). Optionally also create "Timesheet Meals And Gifts Computation Rule".
-3. **Set TimeSheetEntryItem Status default** — Object Manager > Time Sheet Entry Item > Fields > Status > Edit "New" value > Check "Make this value the default" > Save.
+2. **Set TimeSheetEntryItem Status default** — Object Manager > Time Sheet Entry Item > Fields > Status > Edit "New" value > Check "Make this value the default" > Save.
 
 ### 2. Run the automated script
 
@@ -38,7 +37,7 @@ The script handles everything else:
 - Configures **Service Resource Cost Rules** (Compute Time Breakdown, Compute Meals & Gifts)
 - Sets **OWD sharing** (TimeSheet, CostCenter, GeolocationBasedAction, JobExpenseType → ReadWrite; SupplementalCompensation → Read)
 - Assigns **Permission Sets** (prompts for usernames)
-- Deploys **SDO Timesheet Data Rules** expression set
+- Deploys **Expression Sets** — TimesheetEntryItemComputationRule (Rank 1, Active) + SDO_Timesheet_Data_Rules
 - Runs **verification** queries
 
 ### 3. Verify on mobile

@@ -16,14 +16,14 @@ Complete setup for Salesforce Field Service Timesheets & Labor Cost Optimization
 ## Order of Operations
 
 ```
-1. Manual Steps (UI)        ← 3 steps, do these FIRST
+1. Manual Steps (UI)        ← 2 steps, do these FIRST
 2. Run setup script (CLI)   ← Automates everything else
 3. Verification (Mobile)    ← Test on Field Service Mobile
 ```
 
 ---
 
-## PART A: Manual Steps (3 steps — UI only)
+## PART A: Manual Steps (2 steps — UI only)
 
 ### A1. Enable Timesheets & Labor Cost Optimization
 
@@ -34,19 +34,7 @@ Complete setup for Salesforce Field Service Timesheets & Labor Cost Optimization
 5. Set **End Time Rounding Threshold** = 15 min
 6. Save
 
-### A2. Create Expression Sets from Templates
-
-Go to **App Launcher > Expression Set Templates**.
-
-| Template Name | Rank | Required? |
-|---|---|---|
-| **Timesheet Entry Item Computation Rule** | 1 | **YES — this is critical** |
-| Timesheet Meals And Gifts Computation Rule | 1 | For meal computation |
-| Timesheet Vehicle Validation Rule | 1 | Optional |
-
-For each: Click the template > Set Rank = 1 > **Save and Activate**.
-
-### A3. Set TimeSheetEntryItem Status Default
+### A2. Set TimeSheetEntryItem Status Default
 
 Object Manager > **Time Sheet Entry Item** > Fields & Relationships > **Status** > Edit "New" value > Check **"Make this value the default for the master picklist"** > Save.
 
@@ -72,7 +60,7 @@ cd scripts
 | **3. Cost Rules** | Creates/updates Compute Time Breakdown + Compute Meals & Gifts with correct Type, Rule, and StandardApexClass |
 | **4. OWD Sharing** | Sets TimeSheet, CostCenter, GeolocationBasedAction, JobExpenseType to ReadWrite; SupplementalCompensation to Read |
 | **5. Permission Sets** | Prompts for usernames, assigns LaborCostOptimAdmin/Supervisor/Resource |
-| **6. Expression Set** | Deploys SDO_Timesheet_Data_Rules and sets UsageType to Timesheet |
+| **6. Expression Sets** | Deploys TimesheetEntryItemComputationRule (Rank 1, Active) + SDO_Timesheet_Data_Rules |
 | **7. Verification** | Queries Pay Types, Cost Rules, and OWD settings to confirm |
 
 ---
@@ -134,3 +122,4 @@ For bulk approve/reject:
 | "Start/end time doesn't match" error | TimeSheet boundaries don't align with entries | Ensure first entry start = TS start, last entry end = TS end |
 | All hours show as Regular Time | Operating Hours define full day as regular | Adjust Operating Hours timeslots for OT windows |
 | No Time Sheet Entry Items object | Feature not enabled | Enable in Field Service Settings (Step A1) |
+| Expression set deploy conflicts | Expression set already exists from template | Delete the existing one in the org, then re-run the script |

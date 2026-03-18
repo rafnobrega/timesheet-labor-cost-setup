@@ -13,8 +13,7 @@
 #   - sf CLI authenticated to the target org
 #   - Manual steps completed (see README.md):
 #     1. Enable Timesheets in Field Service Settings
-#     2. Create expression sets from templates
-#     3. Set TimeSheetEntryItem Status default to "New"
+#     2. Set TimeSheetEntryItem Status default to "New"
 # =============================================================================
 
 set -euo pipefail
@@ -235,39 +234,40 @@ fi
 echo ""
 
 # =============================================================================
-# STEP 6: Deploy SDO Timesheet Data Rules expression set
+# STEP 6: Deploy Expression Sets
 # =============================================================================
-echo "--- Step 6: Deploying SDO Timesheet Data Rules expression set ---"
+echo "--- Step 6: Deploying Expression Sets ---"
 
-EXPR_SET_FILE="$PROJECT_DIR/force-app/main/default/expressionSetDefinition/SDO_Timesheet_Data_Rules.expressionSetDefinition-meta.xml"
+EXPR_SET_DIR="$PROJECT_DIR/force-app/main/default/expressionSetDefinition"
 
-if [ -f "$EXPR_SET_FILE" ]; then
-  echo "  Found local expression set metadata — deploying..."
+if [ -d "$EXPR_SET_DIR" ]; then
+  echo "  Deploying expression sets..."
   (cd "$PROJECT_DIR" && sf project deploy start \
     --source-dir "force-app/main/default/expressionSetDefinition" \
     --target-org "$ORG" --json >/dev/null 2>&1) && \
-    echo "  Deployed SDO_Timesheet_Data_Rules successfully" || \
-    echo "  WARNING: Deployment failed. Deploy manually or check the expression set in the org."
+    echo "  Deployed expression sets successfully:" && \
+    echo "    - TimesheetEntryItemComputationRule (Rank 1, Active)" && \
+    echo "    - SDO_Timesheet_Data_Rules" || \
+    echo "  WARNING: Expression set deployment failed. Check the org for conflicts."
+
+  # Update UsageType to Timesheet for SDO_Timesheet_Data_Rules via Tooling API
+  echo "  Setting SDO_Timesheet_Data_Rules UsageType to Timesheet..."
+  ACCESS_TOKEN=$(sf org display --target-org "$ORG" --json 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['result']['accessToken'])")
+  INSTANCE_URL=$(sf org display --target-org "$ORG" --json 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['result']['instanceUrl'])")
+
+  EXPR_ID=$(curl -s "${INSTANCE_URL}/services/data/v66.0/tooling/query/?q=SELECT+Id+FROM+ExpressionSetDefinition+WHERE+DeveloperName='SDO_Timesheet_Data_Rules'" \
+    -H "Authorization: Bearer ${ACCESS_TOKEN}" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['records'][0]['Id'] if d.get('records') else '')" 2>/dev/null)
+
+  if [ -n "$EXPR_ID" ]; then
+    curl -s -X PATCH "${INSTANCE_URL}/services/data/v66.0/tooling/sobjects/ExpressionSetDefinition/${EXPR_ID}" \
+      -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+      -H "Content-Type: application/json" \
+      -d '{"Metadata":{"processType":"Timesheet","label":"SDO Timesheet Data Rules","template":false}}' >/dev/null 2>&1 && \
+      echo "  Set processType to Timesheet" || \
+      echo "  NOTE: processType may already be set (cannot change after creation)."
+  fi
 else
-  echo "  WARNING: SDO_Timesheet_Data_Rules metadata not found locally."
-  echo "  You may need to create it from the Timesheet Data Rules template in the org."
-fi
-
-# Update UsageType to Timesheet via Tooling API
-echo "  Setting UsageType to Timesheet..."
-ACCESS_TOKEN=$(sf org display --target-org "$ORG" --json 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['result']['accessToken'])")
-INSTANCE_URL=$(sf org display --target-org "$ORG" --json 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['result']['instanceUrl'])")
-
-EXPR_ID=$(curl -s "${INSTANCE_URL}/services/data/v66.0/tooling/query/?q=SELECT+Id+FROM+ExpressionSetDefinition+WHERE+DeveloperName='SDO_Timesheet_Data_Rules'" \
-  -H "Authorization: Bearer ${ACCESS_TOKEN}" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['records'][0]['Id'] if d.get('records') else '')" 2>/dev/null)
-
-if [ -n "$EXPR_ID" ]; then
-  curl -s -X PATCH "${INSTANCE_URL}/services/data/v66.0/tooling/sobjects/ExpressionSetDefinition/${EXPR_ID}" \
-    -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-    -H "Content-Type: application/json" \
-    -d '{"Metadata":{"processType":"Timesheet","label":"SDO Timesheet Data Rules","template":false}}' >/dev/null 2>&1 && \
-    echo "  Set processType to Timesheet" || \
-    echo "  NOTE: processType may already be set (cannot change after creation)."
+  echo "  WARNING: Expression set metadata not found locally."
 fi
 echo ""
 
@@ -311,6 +311,5 @@ echo "=== Automated setup complete ==="
 echo ""
 echo "REMAINING MANUAL STEPS (if not done already):"
 echo "  1. Enable Timesheets in Field Service Settings (Setup > Field Service Settings)"
-echo "  2. Create expression sets from templates (App Launcher > Expression Set Templates)"
-echo "  3. Set TimeSheetEntryItem Status default to 'New' (Object Manager > TimeSheetEntryItem > Status)"
-echo "  4. Page layout actions — optional (see TIMESHEET-SETUP-GUIDE.md Part C)"
+echo "  2. Set TimeSheetEntryItem Status default to 'New' (Object Manager > TimeSheetEntryItem > Status)"
+echo "  3. Page layout actions — optional (see TIMESHEET-SETUP-GUIDE.md Part C)"

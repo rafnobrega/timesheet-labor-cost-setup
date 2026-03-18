@@ -2,6 +2,7 @@
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
     <types>
         <members>SDO_Timesheet_Data_Rules</members>
+        <members>TimesheetEntryItemComputationRule</members>
         <name>ExpressionSetDefinition</name>
     </types>
     <types>
