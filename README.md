@@ -40,7 +40,16 @@ The script handles everything else:
 - Deploys **Expression Sets** — TimesheetEntryItemComputationRule (Rank 1, Active) + SDO_Timesheet_Data_Rules
 - Runs **verification** queries
 
-### 3. Verify on mobile
+### 3. Add Timesheets to Field Service Mobile App
+
+The Timesheets component must be added to the mobile layout manually (this is not deployable metadata):
+
+1. Setup > **Field Service Mobile App Builder**
+2. Select your mobile app configuration
+3. Add the **Timesheets** component to the navigation menu
+4. Save and publish
+
+### 4. Verify on mobile
 
 1. Open Field Service Mobile App
 2. Create a timesheet with time entries

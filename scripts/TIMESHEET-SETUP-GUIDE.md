@@ -65,7 +65,20 @@ cd scripts
 
 ---
 
-## PART C: Page Layouts & Actions (Optional — for full demo)
+## PART C: Add Timesheets to Field Service Mobile App
+
+The Timesheets component is not included in the mobile layout by default and cannot be deployed via metadata. You must add it manually:
+
+1. Setup > Search **"Field Service Mobile App Builder"**
+2. Select your mobile app configuration (or the default)
+3. Add the **Timesheets** component to the navigation menu
+4. Save and publish
+
+> **Note:** Without this step, technicians will not see the Timesheets tab in the Field Service Mobile App.
+
+---
+
+## PART D: Page Layouts & Actions (Optional — for full demo)
 
 ### C1. Approve/Reject Actions on Record Pages
 
@@ -98,7 +111,7 @@ For bulk approve/reject:
 
 ---
 
-## PART D: Verification
+## PART E: Verification
 
 1. Log into Field Service Mobile as a technician
 2. Go to Time Sheets > Create a new timesheet for today
